@@ -132,8 +132,22 @@ public final class PinBoard {
     private PinGeometry.Span[] occupiedColumn(int left, int width) {
         return pins.stream()
                 .filter(pin -> pin.x() < left + width && pin.x() + pin.width() > left)
-                .map(pin -> new PinGeometry.Span(pin.y(), pin.height()))
+                .map(pin -> new PinGeometry.Span(pin.homeY(), pin.height()))
                 .toArray(PinGeometry.Span[]::new);
+    }
+
+    public void arrange(int width, int height, Optional<PinGeometry.Rect> obstacle) {
+        List<PinGeometry.Rect> homes = new ArrayList<>(pins.size());
+        for (PinnedRecipe pin : pins) {
+            pin.clampTo(width, height);
+            homes.add(new PinGeometry.Rect(pin.x(), pin.homeY(), pin.width(), pin.height()));
+        }
+        List<PinGeometry.Rect> shown =
+                obstacle.map(area -> PinGeometry.avoid(homes, area, height)).orElse(homes);
+        for (int i = 0; i < pins.size(); i++) {
+            PinnedRecipe pin = pins.get(i);
+            pin.nudgeTo(PinGeometry.clamp(shown.get(i).y(), pin.height(), height));
+        }
     }
 
     public void unpin(PinnedRecipe pin) {
@@ -186,6 +200,7 @@ public final class PinBoard {
                     .getRecipeType(Identifier.parse(entry.type()))
                     .flatMap(type -> decode(type, entry.recipe(), ops))
                     .ifPresent(pin -> {
+                        pin.resize(entry.scale());
                         add(pin);
                         pin.moveTo(entry.x(), entry.y());
                     });

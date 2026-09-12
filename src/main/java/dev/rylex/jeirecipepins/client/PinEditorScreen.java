@@ -54,7 +54,7 @@ public final class PinEditorScreen extends Screen {
             guiGraphics.centeredText(
                     font, Component.translatable("jeirecipepins.editor.empty"), width / 2, height / 2 - 4, TEXT);
         }
-        PinOverlay.drawPins(guiGraphics, board, mouseX, mouseY);
+        PinOverlay.drawPins(guiGraphics, this, board, mouseX, mouseY);
     }
 
     @Override

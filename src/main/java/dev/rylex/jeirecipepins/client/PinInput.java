@@ -47,6 +47,7 @@ final class PinInput {
     }
 
     static boolean click(PinnedRecipe pin, double mouseX, double mouseY, int button) {
+        pin.alignLayoutTo(mouseX, mouseY);
         IJeiInputHandler handler = pin.layout().getInputHandler();
         InputConstants.Key key = InputConstants.Type.MOUSE.getOrCreate(button);
         MouseButtonEvent event = new MouseButtonEvent(mouseX, mouseY, new MouseButtonInfo(button, 0));
@@ -57,6 +58,7 @@ final class PinInput {
     }
 
     static boolean scroll(PinnedRecipe pin, double mouseX, double mouseY, double deltaX, double deltaY) {
+        pin.alignLayoutTo(mouseX, mouseY);
         return pin.layout().getInputHandler().handleMouseScrolled(mouseX, mouseY, deltaX, deltaY);
     }
 }
