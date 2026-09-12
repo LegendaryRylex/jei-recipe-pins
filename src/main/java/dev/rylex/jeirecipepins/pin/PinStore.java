@@ -19,7 +19,7 @@ import net.minecraft.world.level.storage.LevelResource;
 import net.neoforged.fml.loading.FMLPaths;
 
 final class PinStore {
-    record Entry(String type, JsonElement recipe, int x, int y) {}
+    record Entry(String type, JsonElement recipe, int x, int y, double scale) {}
 
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
 
@@ -60,7 +60,8 @@ final class PinStore {
                         pin.get("type").getAsString(),
                         pin.get("recipe"),
                         pin.get("x").getAsInt(),
-                        pin.get("y").getAsInt()));
+                        pin.get("y").getAsInt(),
+                        pin.has("scale") ? pin.get("scale").getAsDouble() : 1.0));
             }
         } catch (IOException | RuntimeException e) {
             JeiRecipePins.LOGGER.warn("Could not read pinned recipes from {}", file, e);
@@ -79,7 +80,8 @@ final class PinStore {
             object.addProperty("type", pin.type().getUid().toString());
             object.add("recipe", recipe);
             object.addProperty("x", pin.x());
-            object.addProperty("y", pin.y());
+            object.addProperty("y", pin.homeY());
+            object.addProperty("scale", pin.scale());
             array.add(object);
         }
         JsonObject root = new JsonObject();

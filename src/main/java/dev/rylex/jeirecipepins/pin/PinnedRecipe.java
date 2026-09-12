@@ -25,6 +25,7 @@ import org.jetbrains.annotations.Nullable;
 public final class PinnedRecipe {
     public static final int PAD = 3;
     public static final int TITLE_HEIGHT = 12;
+    public static final int GRIP = 6;
 
     private final IRecipeLayoutDrawable<?> layout;
     private final RecipeType<?> type;
@@ -44,6 +45,8 @@ public final class PinnedRecipe {
     private final boolean[] missing;
     private int x;
     private int y;
+    private int nudge;
+    private double scale = 1.0;
 
     private PinnedRecipe(
             IRecipeLayoutDrawable<?> layout,
@@ -186,28 +189,79 @@ public final class PinnedRecipe {
     }
 
     public int y() {
-        return y;
+        return y + nudge;
     }
 
     public int width() {
-        return innerWidth + 2 * PAD;
+        return scaled(innerWidth) + 2 * PAD;
     }
 
     public int height() {
-        return TITLE_HEIGHT + innerHeight + 2 * PAD;
+        return TITLE_HEIGHT + scaled(innerHeight) + 2 * PAD;
     }
 
-    public int layoutX() {
-        return x + PAD + border;
+    public double scale() {
+        return scale;
     }
 
-    public int layoutY() {
-        return y + TITLE_HEIGHT + PAD + border;
+    public void resize(double scale) {
+        this.scale = PinGeometry.clampScale(scale);
+    }
+
+    public void resizeToCorner(double right, double bottom) {
+        scale = PinGeometry.scaleToReach(right - PAD - bodyX(), bottom - PAD - bodyY(), innerWidth, innerHeight);
+    }
+
+    private int scaled(int length) {
+        return (int) Math.round(length * scale);
+    }
+
+    public int bodyX() {
+        return x + PAD;
+    }
+
+    public int bodyY() {
+        return y() + TITLE_HEIGHT + PAD;
+    }
+
+    public double toBodyX(double screenX) {
+        return (screenX - bodyX()) / scale;
+    }
+
+    public double toBodyY(double screenY) {
+        return (screenY - bodyY()) / scale;
+    }
+
+    public Rect2i toScreen(int recipeX, int recipeY, int width, int height) {
+        return new Rect2i(
+                (int) Math.round(bodyX() + (border + recipeX) * scale),
+                (int) Math.round(bodyY() + (border + recipeY) * scale),
+                scaled(width),
+                scaled(height));
+    }
+
+    /**
+     * Places the unscaled layout so the recipe point drawn under this screen point sits on it, which keeps JEI's hit
+     * tests and tooltips in screen space at any scale.
+     */
+    public void alignLayoutTo(double screenX, double screenY) {
+        layout.setPosition(
+                (int) Math.round(screenX - toBodyX(screenX)) + border,
+                (int) Math.round(screenY - toBodyY(screenY)) + border);
+    }
+
+    public int homeY() {
+        return y;
     }
 
     public void moveTo(int x, int y) {
         this.x = x;
         this.y = y;
+        nudge = 0;
+    }
+
+    public void nudgeTo(int displayY) {
+        nudge = displayY - y;
     }
 
     public void clampTo(int width, int height) {
@@ -216,14 +270,18 @@ public final class PinnedRecipe {
     }
 
     public boolean contains(double mouseX, double mouseY) {
-        return mouseX >= x && mouseY >= y && mouseX < x + width() && mouseY < y + height();
+        return mouseX >= x && mouseY >= y() && mouseX < x + width() && mouseY < y() + height();
     }
 
     public boolean inTitleBar(double mouseX, double mouseY) {
-        return contains(mouseX, mouseY) && mouseY < y + TITLE_HEIGHT;
+        return contains(mouseX, mouseY) && mouseY < y() + TITLE_HEIGHT;
     }
 
     public boolean onCloseButton(double mouseX, double mouseY) {
         return inTitleBar(mouseX, mouseY) && mouseX >= x + width() - TITLE_HEIGHT;
+    }
+
+    public boolean onResizeGrip(double mouseX, double mouseY) {
+        return contains(mouseX, mouseY) && mouseX >= x + width() - GRIP && mouseY >= y() + height() - GRIP;
     }
 }

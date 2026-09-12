@@ -1,10 +1,12 @@
 package dev.rylex.jeirecipepins.client;
 
+import dev.rylex.jeirecipepins.compat.ftblibrary.FtbLibraryCompat;
 import dev.rylex.jeirecipepins.config.PinsConfig;
 import dev.rylex.jeirecipepins.pin.PinBoard;
 import dev.rylex.jeirecipepins.pin.PinnedRecipe;
 import java.util.BitSet;
 import java.util.List;
+import java.util.Optional;
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
@@ -33,8 +35,8 @@ final class PinOverlay {
             return;
         }
         double scale = PinsConfig.inWorldScale();
+        board.arrange(guiGraphics.guiWidth(), guiGraphics.guiHeight(), Optional.empty());
         for (PinnedRecipe pin : board.pins()) {
-            pin.clampTo(guiGraphics.guiWidth(), guiGraphics.guiHeight());
             PinPanel.drawScaled(guiGraphics, pin, pin.x(), pin.y(), scale);
         }
     }
@@ -45,17 +47,17 @@ final class PinOverlay {
             if (PinsConfig.highlightContainerSlots() && screen instanceof AbstractContainerScreen<?> container) {
                 drawContainerHighlights(guiGraphics, container, board.containerSlots());
             }
-            drawPins(guiGraphics, board, mouseX, mouseY);
+            drawPins(guiGraphics, screen, board, mouseX, mouseY);
         }
         PinToggleButton.render(guiGraphics, screen, mouseX, mouseY, partialTick);
     }
 
-    static void drawPins(GuiGraphics guiGraphics, PinBoard board, int mouseX, int mouseY) {
+    static void drawPins(GuiGraphics guiGraphics, Screen screen, PinBoard board, int mouseX, int mouseY) {
         var pose = guiGraphics.pose();
         pose.pushPose();
         pose.translate(0, 0, SCREEN_DEPTH);
+        board.arrange(guiGraphics.guiWidth(), guiGraphics.guiHeight(), FtbLibraryCompat.sidebarArea(screen));
         for (PinnedRecipe pin : board.pins()) {
-            pin.clampTo(guiGraphics.guiWidth(), guiGraphics.guiHeight());
             PinPanel.draw(guiGraphics, pin, mouseX, mouseY);
         }
         board.pinAt(mouseX, mouseY).ifPresent(pin -> PinPanel.drawTooltips(guiGraphics, pin, mouseX, mouseY));
