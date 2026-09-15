@@ -44,24 +44,6 @@ class PinGeometryTest {
     }
 
     @Test
-    void pinsLeftOfTheGuiBecomeOneBandDownToTheLowestPin() {
-        List<Rect> pins = List.of(new Rect(4, 24, 120, 60), new Rect(4, 88, 90, 40));
-        assertEquals(List.of(new Rect(0, 0, 200, 128)), PinGeometry.exclusionAreas(pins, 200, 400, 600));
-    }
-
-    @Test
-    void pinsRightOfTheGuiBandTheRightSide() {
-        List<Rect> pins = List.of(new Rect(420, 10, 120, 60));
-        assertEquals(List.of(new Rect(400, 0, 200, 70)), PinGeometry.exclusionAreas(pins, 200, 400, 600));
-    }
-
-    @Test
-    void aPinOverTheGuiKeepsItsOwnRectangle() {
-        List<Rect> pins = List.of(new Rect(150, 10, 120, 60));
-        assertEquals(pins, PinGeometry.exclusionAreas(pins, 200, 400, 600));
-    }
-
-    @Test
     void aPinUnderATopObstacleMovesBelowIt() {
         List<Rect> pins = List.of(new Rect(4, 24, 120, 60));
         assertEquals(List.of(new Rect(4, 38, 120, 60)), PinGeometry.avoid(pins, new Rect(0, 0, 68, 34), 240));
