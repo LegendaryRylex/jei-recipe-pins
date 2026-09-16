@@ -1,124 +1,94 @@
 package dev.rylex.jeirecipepins.client;
 
 import dev.rylex.jeirecipepins.JeiRecipePins;
-import dev.rylex.jeirecipepins.mixin.BookmarkOverlayAccessor;
 import dev.rylex.jeirecipepins.pin.PinBoard;
 import java.util.Optional;
-import mezz.jei.api.gui.builder.ITooltipBuilder;
-import mezz.jei.api.gui.buttons.IButtonState;
-import mezz.jei.api.gui.buttons.IIconButtonController;
-import mezz.jei.api.gui.drawable.IDrawable;
-import mezz.jei.api.gui.inputs.IJeiUserInput;
-import mezz.jei.api.helpers.IGuiHelper;
-import mezz.jei.api.runtime.IJeiRuntime;
-import mezz.jei.common.util.ImmutableRect2i;
-import mezz.jei.gui.elements.IconButton;
+import mezz.jei.api.gui.handlers.IGuiProperties;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
-import net.minecraft.client.resources.sounds.SimpleSoundInstance;
+import net.minecraft.client.renderer.Rect2i;
+import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.sounds.SoundEvents;
 import org.jetbrains.annotations.Nullable;
 
-final class PinToggleButton {
+public final class PinToggleButton {
     private static final ResourceLocation ICON = JeiRecipePins.id("textures/gui/pin_menu.png");
     private static final ResourceLocation SHOWN_ICON = JeiRecipePins.id("textures/gui/pin_menu_active.png");
     private static final int ICON_SIZE = 16;
+    private static final int BUTTON_SIZE = 20;
     private static final int BUTTON_GAP = 2;
 
-    @Nullable
-    private static IconButton button;
+    private static final PinButton BUTTON = new PinButton(
+            Button.builder(CommonComponents.EMPTY, ignored -> PinBoard.get().toggleVisible())
+                    .size(BUTTON_SIZE, BUTTON_SIZE));
 
     private PinToggleButton() {}
 
-    private static final class Controller implements IIconButtonController {
-        private final IDrawable icon;
-        private final IDrawable shownIcon;
-
-        private Controller(IJeiRuntime runtime) {
-            IGuiHelper guiHelper = runtime.getJeiHelpers().getGuiHelper();
-            this.icon = guiHelper
-                    .drawableBuilder(ICON, 0, 0, ICON_SIZE, ICON_SIZE)
-                    .setTextureSize(ICON_SIZE, ICON_SIZE)
-                    .build();
-            this.shownIcon = guiHelper
-                    .drawableBuilder(SHOWN_ICON, 0, 0, ICON_SIZE, ICON_SIZE)
-                    .setTextureSize(ICON_SIZE, ICON_SIZE)
-                    .build();
+    private static final class PinButton extends Button {
+        private PinButton(Builder builder) {
+            super(builder);
         }
 
         @Override
-        public void updateState(IButtonState state) {
-            boolean visible = PinBoard.get().isVisible();
-            state.setIcon(visible ? shownIcon : icon);
-            state.setForcePressed(visible);
-        }
-
-        @Override
-        public boolean onPress(IJeiUserInput input) {
-            if (!input.isSimulate()) {
-                PinBoard.get().toggleVisible();
-            }
-            return true;
-        }
-
-        @Override
-        public void getTooltips(ITooltipBuilder tooltip) {
-            tooltip.add(Component.translatable(
-                    PinBoard.get().isVisible() ? "jeirecipepins.button.hide" : "jeirecipepins.button.show"));
-        }
+        public void renderString(GuiGraphics guiGraphics, Font font, int color) {}
     }
 
     static void render(GuiGraphics guiGraphics, Screen screen, int mouseX, int mouseY, float partialTick) {
-        IconButton current = button(screen).orElse(null);
+        PinButton current = button(screen).orElse(null);
         if (current == null) {
             return;
         }
-        current.draw(guiGraphics, mouseX, mouseY, partialTick);
-        if (current.isMouseOver(mouseX, mouseY)) {
-            current.drawTooltips(guiGraphics, mouseX, mouseY);
+        boolean visible = PinBoard.get().isVisible();
+        current.setMessage(Component.translatable(visible ? "jeirecipepins.button.hide" : "jeirecipepins.button.show"));
+        current.render(guiGraphics, mouseX, mouseY, partialTick);
+        ResourceLocation icon = visible ? SHOWN_ICON : ICON;
+        guiGraphics.blit(
+                icon,
+                current.getX() + (BUTTON_SIZE - ICON_SIZE) / 2,
+                current.getY() + (BUTTON_SIZE - ICON_SIZE) / 2,
+                0,
+                0,
+                ICON_SIZE,
+                ICON_SIZE,
+                ICON_SIZE,
+                ICON_SIZE);
+        if (current.isHovered()) {
+            guiGraphics.renderTooltip(Minecraft.getInstance().font, current.getMessage(), mouseX, mouseY);
         }
     }
 
     static boolean click(Screen screen, double mouseX, double mouseY, int mouseButton) {
-        if (mouseButton != 0) {
-            return false;
-        }
-        boolean hit = button(screen)
-                .map(current -> current.isMouseOver(mouseX, mouseY))
+        return button(screen)
+                .map(current -> current.mouseClicked(mouseX, mouseY, mouseButton))
                 .orElse(false);
-        if (hit) {
-            Minecraft.getInstance()
-                    .getSoundManager()
-                    .play(SimpleSoundInstance.forUI(SoundEvents.UI_BUTTON_CLICK, 1.0F));
-            PinBoard.get().toggleVisible();
-        }
-        return hit;
     }
 
-    private static Optional<IconButton> button(Screen screen) {
-        IJeiRuntime runtime = PinBoard.get().runtime().orElse(null);
-        if (runtime == null
-                || runtime.getScreenHelper().getGuiProperties(screen).isEmpty()) {
+    public static Optional<Rect2i> area(@Nullable Screen screen) {
+        if (screen == null || PinBoard.get().pins().isEmpty()) {
             return Optional.empty();
         }
-        if (!(runtime.getBookmarkOverlay() instanceof BookmarkOverlayAccessor overlay)) {
-            return Optional.empty();
-        }
-        IconButton history = overlay.jeirecipepins$historyButton();
-        ImmutableRect2i anchor = history.isVisible()
-                ? history.getArea()
-                : overlay.jeirecipepins$bookmarkButton().getArea();
-        if (anchor.isEmpty()) {
-            return Optional.empty();
-        }
-        if (button == null) {
-            button = new IconButton(new Controller(runtime));
-        }
-        button.updateBounds(anchor.moveRight(anchor.width() + BUTTON_GAP));
-        button.tick();
-        return Optional.of(button);
+        return PinBoard.get()
+                .runtime()
+                .flatMap(runtime -> runtime.getScreenHelper().getGuiProperties(screen))
+                .map(PinToggleButton::area);
+    }
+
+    private static Optional<PinButton> button(Screen screen) {
+        return area(screen).map(area -> {
+            BUTTON.setRectangle(area.getWidth(), area.getHeight(), area.getX(), area.getY());
+            return BUTTON;
+        });
+    }
+
+    private static Rect2i area(IGuiProperties properties) {
+        int left = properties.guiLeft() - BUTTON_GAP - BUTTON_SIZE;
+        int right = properties.guiRight() + BUTTON_GAP;
+        int x = left >= 0 ? left : Math.min(right, properties.screenWidth() - BUTTON_SIZE);
+        int y = Math.max(0, Math.min(properties.guiTop(), properties.screenHeight() - BUTTON_SIZE));
+        return new Rect2i(Math.max(0, x), y, BUTTON_SIZE, BUTTON_SIZE);
     }
 }

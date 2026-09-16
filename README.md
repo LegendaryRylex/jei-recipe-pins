@@ -6,4 +6,4 @@ A pin button sits beside every recipe in JEI, next to the bookmark button. A pin
 
 While a container is open, its slots that hold an input of a pinned recipe are highlighted, and inputs you have neither on you nor in that container are tinted in the pinned recipe itself. JEI's usual keys work on the pinned ingredients.
 
-Pins drag by their title bar and resize from their bottom right corner in any container or JEI screen. Out in the world the editor does the same job, opened with P or `/jeirecipepins edit`. Pins are hidden and shown with Alt+P or the pin button beside JEI's lookup history, and they are remembered per world and server. The client config covers size, spacing, the number of pins and whether pins are shared between worlds.
+Pins drag by their title bar and resize from their bottom right corner in any container or JEI screen. Out in the world the editor does the same job, opened with P or `/jeirecipepins edit`. Pins are hidden and shown with Alt+P or the pin button beside the open GUI, and they are remembered per world and server. The client config covers size, spacing, the number of pins and whether pins are shared between worlds.

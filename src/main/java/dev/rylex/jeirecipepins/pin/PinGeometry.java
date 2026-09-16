@@ -116,30 +116,4 @@ public final class PinGeometry {
     private static Rect mirror(Rect rect, int screenHeight) {
         return new Rect(rect.x(), screenHeight - rect.bottom(), rect.width(), rect.height());
     }
-
-    /**
-     * JEI hides only the overlay slots a rectangle covers and shifts the grid only when its page buttons are covered, so
-     * pins beside the GUI are reported as a band across that whole side to make the overlay always start below them.
-     */
-    public static List<Rect> exclusionAreas(List<Rect> pins, int guiLeft, int guiRight, int screenWidth) {
-        List<Rect> areas = new ArrayList<>();
-        int leftBottom = 0;
-        int rightBottom = 0;
-        for (Rect pin : pins) {
-            if (pin.right() <= guiLeft) {
-                leftBottom = Math.max(leftBottom, pin.bottom());
-            } else if (pin.x() >= guiRight) {
-                rightBottom = Math.max(rightBottom, pin.bottom());
-            } else {
-                areas.add(pin);
-            }
-        }
-        if (leftBottom > 0) {
-            areas.add(new Rect(0, 0, guiLeft, leftBottom));
-        }
-        if (rightBottom > 0) {
-            areas.add(new Rect(guiRight, 0, screenWidth - guiRight, rightBottom));
-        }
-        return areas;
-    }
 }

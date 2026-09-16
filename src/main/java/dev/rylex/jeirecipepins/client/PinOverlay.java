@@ -30,8 +30,7 @@ final class PinOverlay {
                 || !board.isVisible()
                 || board.pins().isEmpty()
                 || PinScreens.drawsPins(screen)
-                || screen instanceof PinEditorScreen
-                || PinScreens.isJei(screen)) {
+                || screen instanceof PinEditorScreen) {
             return;
         }
         double scale = PinsConfig.inWorldScale();
