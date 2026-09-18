@@ -10,7 +10,7 @@ public final class PinsConfig {
 
     private static final boolean DEFAULT_SHOW_IN_WORLD = true;
     private static final double DEFAULT_IN_WORLD_SCALE = 1.0;
-    private static final int DEFAULT_TOP_GAP = 24;
+    private static final int DEFAULT_TOP_GAP = 36;
     private static final int DEFAULT_LEFT_GAP = 4;
     private static final int DEFAULT_MAX_PINS = 3;
     private static final boolean DEFAULT_PER_WORLD = true;
