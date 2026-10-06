@@ -113,6 +113,29 @@ public final class PinGeometry {
         return null;
     }
 
+    /**
+     * JEI shifts its overlay sideways past a rectangle it can fit beside, so a pin reaching into either side of the GUI
+     * is widened to that side's full width, leaving the overlay only room above or below it.
+     */
+    public static List<Rect> sideBands(List<Rect> pins, int guiLeft, int guiRight, int screenWidth) {
+        List<Rect> bands = new ArrayList<>();
+        for (Rect pin : pins) {
+            boolean left = pin.x() < guiLeft;
+            boolean right = pin.right() > guiRight;
+            if (left) {
+                bands.add(new Rect(0, pin.y(), Math.max(pin.right(), guiLeft), pin.height()));
+            }
+            if (right) {
+                int x = Math.min(pin.x(), guiRight);
+                bands.add(new Rect(x, pin.y(), screenWidth - x, pin.height()));
+            }
+            if (!left && !right) {
+                bands.add(pin);
+            }
+        }
+        return bands;
+    }
+
     private static Rect mirror(Rect rect, int screenHeight) {
         return new Rect(rect.x(), screenHeight - rect.bottom(), rect.width(), rect.height());
     }

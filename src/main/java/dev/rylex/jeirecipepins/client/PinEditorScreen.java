@@ -16,7 +16,6 @@ public final class PinEditorScreen extends Screen {
 
     private final PinDragger dragger = new PinDragger();
 
-    /** The parent is shown again on close, the way JEI restores a container behind its own recipe screen. */
     public PinEditorScreen(@Nullable Screen parent) {
         super(Component.translatable("jeirecipepins.editor.title"));
         this.parent = parent;

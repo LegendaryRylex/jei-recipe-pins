@@ -32,6 +32,33 @@ class PinGeometryTest {
     }
 
     @Test
+    void aPinLeftOfTheGuiSpansTheWholeLeftSide() {
+        assertEquals(
+                List.of(new Rect(0, 30, 100, 40)),
+                PinGeometry.sideBands(List.of(new Rect(4, 30, 60, 40)), 100, 276, 400));
+    }
+
+    @Test
+    void aPinRightOfTheGuiSpansTheWholeRightSide() {
+        assertEquals(
+                List.of(new Rect(276, 30, 124, 40)),
+                PinGeometry.sideBands(List.of(new Rect(300, 30, 60, 40)), 100, 276, 400));
+    }
+
+    @Test
+    void aPinReachingIntoTheGuiKeepsItsOwnRightEdge() {
+        assertEquals(
+                List.of(new Rect(0, 30, 130, 40)),
+                PinGeometry.sideBands(List.of(new Rect(70, 30, 60, 40)), 100, 276, 400));
+    }
+
+    @Test
+    void aPinInsideTheGuiColumnIsLeftAsItIs() {
+        Rect pin = new Rect(150, 30, 60, 40);
+        assertEquals(List.of(pin), PinGeometry.sideBands(List.of(pin), 100, 276, 400));
+    }
+
+    @Test
     void clampKeepsThePanelInsideTheWindow() {
         assertEquals(0, PinGeometry.clamp(-5, 50, 200));
         assertEquals(150, PinGeometry.clamp(180, 50, 200));

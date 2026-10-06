@@ -21,6 +21,8 @@ public final class PinToggleButton {
     private static final int ICON_SIZE = 16;
     private static final int BUTTON_SIZE = 20;
     private static final int BUTTON_GAP = 2;
+    private static final int JEI_MARGIN = 6;
+    private static final int JEI_ROW_X = JEI_MARGIN + 2 * (BUTTON_SIZE + BUTTON_GAP);
 
     private static final PinButton BUTTON = new PinButton(
             Button.builder(CommonComponents.EMPTY, ignored -> PinBoard.get().toggleVisible())
@@ -67,24 +69,41 @@ public final class PinToggleButton {
                 .orElse(false);
     }
 
-    public static Optional<Rect2i> area(@Nullable Screen screen) {
+    public static Optional<Rect2i> exclusionArea(@Nullable Screen screen) {
+        return properties(screen)
+                .filter(properties -> !fitsBesideJeiButtons(properties))
+                .map(PinToggleButton::besideGui);
+    }
+
+    private static Optional<IGuiProperties> properties(@Nullable Screen screen) {
         if (screen == null || PinBoard.get().pins().isEmpty()) {
             return Optional.empty();
         }
-        return PinBoard.get()
-                .runtime()
-                .flatMap(runtime -> runtime.getScreenHelper().getGuiProperties(screen))
-                .map(PinToggleButton::area);
+        return PinBoard.get().runtime().flatMap(runtime -> runtime.getScreenHelper()
+                .getGuiProperties(screen));
     }
 
     private static Optional<PinButton> button(Screen screen) {
-        return area(screen).map(area -> {
+        return properties(screen).map(PinToggleButton::area).map(area -> {
             BUTTON.setRectangle(area.getWidth(), area.getHeight(), area.getX(), area.getY());
             return BUTTON;
         });
     }
 
     private static Rect2i area(IGuiProperties properties) {
+        if (fitsBesideJeiButtons(properties)) {
+            return new Rect2i(
+                    JEI_ROW_X, properties.screenHeight() - JEI_MARGIN - BUTTON_SIZE, BUTTON_SIZE, BUTTON_SIZE);
+        }
+        return besideGui(properties);
+    }
+
+    private static boolean fitsBesideJeiButtons(IGuiProperties properties) {
+        return JEI_ROW_X + BUTTON_SIZE <= properties.guiLeft() - JEI_MARGIN
+                && properties.screenHeight() >= 2 * JEI_MARGIN + BUTTON_SIZE;
+    }
+
+    private static Rect2i besideGui(IGuiProperties properties) {
         int left = properties.guiLeft() - BUTTON_GAP - BUTTON_SIZE;
         int right = properties.guiRight() + BUTTON_GAP;
         int x = left >= 0 ? left : Math.min(right, properties.screenWidth() - BUTTON_SIZE);

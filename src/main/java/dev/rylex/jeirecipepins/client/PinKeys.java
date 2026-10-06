@@ -15,15 +15,15 @@ final class PinKeys {
     static final KeyMapping TOGGLE = new KeyMapping(
             "key.jeirecipepins.toggle",
             KeyConflictContext.UNIVERSAL,
-            KeyModifier.ALT,
+            KeyModifier.NONE,
             InputConstants.Type.KEYSYM,
-            GLFW.GLFW_KEY_P,
+            GLFW.GLFW_KEY_UNKNOWN,
             CATEGORY);
     static final KeyMapping EDIT = new KeyMapping(
             "key.jeirecipepins.edit",
             KeyConflictContext.IN_GAME,
             InputConstants.Type.KEYSYM,
-            GLFW.GLFW_KEY_P,
+            GLFW.GLFW_KEY_UNKNOWN,
             CATEGORY);
     static final KeyMapping RESET = new KeyMapping(
             "key.jeirecipepins.reset",

@@ -2,6 +2,7 @@ package dev.rylex.jeirecipepins;
 
 import dev.rylex.jeirecipepins.client.JeiRecipePinsClient;
 import dev.rylex.jeirecipepins.config.PinsConfig;
+import dev.rylex.jeirecipepins.net.PinsNetwork;
 import net.minecraft.resources.ResourceLocation;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.IEventBus;
@@ -22,6 +23,7 @@ public final class JeiRecipePins {
 
     public JeiRecipePins(IEventBus modBus, ModContainer container, Dist dist) {
         container.registerConfig(ModConfig.Type.CLIENT, PinsConfig.SPEC);
+        modBus.addListener(PinsNetwork::registerPayloads);
         if (dist.isClient()) {
             JeiRecipePinsClient.init(container);
         }

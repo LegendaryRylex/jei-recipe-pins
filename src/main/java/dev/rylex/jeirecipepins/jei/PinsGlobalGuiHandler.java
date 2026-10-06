@@ -2,7 +2,9 @@ package dev.rylex.jeirecipepins.jei;
 
 import dev.rylex.jeirecipepins.client.PinScreens;
 import dev.rylex.jeirecipepins.client.PinToggleButton;
+import dev.rylex.jeirecipepins.compat.ftblibrary.FtbLibraryCompat;
 import dev.rylex.jeirecipepins.pin.PinBoard;
+import dev.rylex.jeirecipepins.pin.PinGeometry;
 import dev.rylex.jeirecipepins.pin.PinnedRecipe;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -26,12 +28,24 @@ final class PinsGlobalGuiHandler implements IGlobalGuiHandler {
         PinBoard board = PinBoard.get();
         Screen screen = Minecraft.getInstance().screen;
         List<Rect2i> extraAreas = new ArrayList<>();
-        PinToggleButton.area(screen).ifPresent(extraAreas::add);
-        if (!PinScreens.showsPins(board, screen) || board.pins().isEmpty()) {
+        PinToggleButton.exclusionArea(screen).ifPresent(extraAreas::add);
+        if (screen == null) {
             return extraAreas;
         }
-        board.pins().stream()
-                .map(pin -> new Rect2i(pin.x(), pin.y(), pin.width(), pin.height()))
+        List<PinGeometry.Rect> obstacles = new ArrayList<>();
+        if (PinScreens.showsPins(board, screen)) {
+            board.pins().stream()
+                    .map(pin -> new PinGeometry.Rect(pin.x(), pin.y(), pin.width(), pin.height()))
+                    .forEach(obstacles::add);
+        }
+        FtbLibraryCompat.sidebarArea(screen).ifPresent(obstacles::add);
+        List<PinGeometry.Rect> areas = board.runtime()
+                .flatMap(runtime -> runtime.getScreenHelper().getGuiProperties(screen))
+                .map(properties -> PinGeometry.sideBands(
+                        obstacles, properties.guiLeft(), properties.guiRight(), properties.screenWidth()))
+                .orElse(obstacles);
+        areas.stream()
+                .map(area -> new Rect2i(area.x(), area.y(), area.width(), area.height()))
                 .forEach(extraAreas::add);
         return extraAreas;
     }
