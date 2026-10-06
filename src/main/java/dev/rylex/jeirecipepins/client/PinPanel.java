@@ -16,6 +16,7 @@ final class PinPanel {
     private static final int GRIP = 0xFF909090;
     private static final int GRIP_HOVERED = 0xFFFFFFFF;
     private static final int MISSING = 0x60FF3030;
+    private static final int CRAFTABLE = 0x603070FF;
     private static final int OFFSCREEN_MOUSE = -10000;
 
     private PinPanel() {}
@@ -103,8 +104,10 @@ final class PinPanel {
         pose.pushMatrix();
         pose.translate(rect.getX(), rect.getY());
         for (int i = 0; i < pin.inputs().size(); i++) {
-            if (pin.isMissing(i)) {
-                pin.inputs().get(i).drawHighlight(guiGraphics, MISSING);
+            switch (pin.status(i)) {
+                case MISSING -> pin.inputs().get(i).drawHighlight(guiGraphics, MISSING);
+                case CRAFTABLE -> pin.inputs().get(i).drawHighlight(guiGraphics, CRAFTABLE);
+                case PRESENT -> {}
             }
         }
         pose.popMatrix();

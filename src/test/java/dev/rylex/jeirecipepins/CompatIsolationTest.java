@@ -18,12 +18,15 @@ class CompatIsolationTest {
     private static final Path SOURCE_ROOT = ProjectFiles.root().resolve(Paths.get("src", "main", "java"));
     private static final Path COMPAT_DIR = Paths.get("dev", "rylex", "jeirecipepins", "compat");
 
-    private static final List<ForeignRule> FOREIGN_RULES = List.of(new ForeignRule(
-            Paths.get("dev", "rylex", "jeirecipepins", "compat", "ftblibrary"),
-            List.of("dev.ftb.mods", "dev.architectury")));
+    private static final List<ForeignRule> FOREIGN_RULES = List.of(
+            new ForeignRule(
+                    Paths.get("dev", "rylex", "jeirecipepins", "compat", "ftblibrary"),
+                    List.of("dev.ftb.mods", "dev.architectury")),
+            new ForeignRule(Paths.get("dev", "rylex", "jeirecipepins", "compat", "ae2"), List.of("appeng.")));
 
-    private static final List<String> COMPAT_ENTRY_POINTS =
-            List.of("dev.rylex.jeirecipepins.compat.ftblibrary.FtbLibraryCompat");
+    private static final List<String> COMPAT_ENTRY_POINTS = List.of(
+            "dev.rylex.jeirecipepins.compat.ftblibrary.FtbLibraryCompat",
+            "dev.rylex.jeirecipepins.compat.ae2.Ae2Compat");
 
     @Test
     void foreignClassesStayInsideTheirCompatPackage() {

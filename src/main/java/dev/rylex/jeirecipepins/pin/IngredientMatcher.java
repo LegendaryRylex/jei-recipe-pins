@@ -1,5 +1,6 @@
 package dev.rylex.jeirecipepins.pin;
 
+import dev.rylex.jeirecipepins.compat.ae2.Ae2Compat;
 import java.util.BitSet;
 import java.util.Collections;
 import java.util.HashSet;
@@ -15,6 +16,7 @@ import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.inventory.Slot;
+import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import org.jetbrains.annotations.Nullable;
 
@@ -33,12 +35,13 @@ final class IngredientMatcher {
             IIngredientManager ingredients,
             @Nullable Player player,
             @Nullable AbstractContainerMenu menu,
+            NetworkStock carried,
             List<PinnedRecipe> pins,
             BitSet containerSlots) {
         containerSlots.clear();
         if (player == null || pins.isEmpty()) {
             for (PinnedRecipe pin : pins) {
-                markMissing(pin, Set.of());
+                mark(pin, Set.of(), Set.of());
             }
             return;
         }
@@ -48,6 +51,7 @@ final class IngredientMatcher {
             pin.inputUids().forEach(wanted::addAll);
         }
         Set<Object> available = new HashSet<>();
+        Set<Object> craftable = new HashSet<>();
         Inventory inventory = player.getInventory();
         for (int i = 0; i < inventory.getContainerSize(); i++) {
             ItemStack stack = inventory.getItem(i);
@@ -63,22 +67,49 @@ final class IngredientMatcher {
                     continue;
                 }
                 Object uid = helper.getUid(slot.getItem(), UidContext.Recipe);
-                available.add(uid);
+                if (!Ae2Compat.isTerminalSlot(slot)) {
+                    available.add(uid);
+                }
                 if (!(slot.container instanceof Inventory) && wanted.contains(uid)) {
                     containerSlots.set(i);
                 }
             }
+            Ae2Compat.networkStock(menu, () -> wantedItems(pins))
+                    .ifPresent(stock -> addStock(stock, helper, available, craftable));
         }
+        addStock(carried, helper, available, craftable);
         for (PinnedRecipe pin : pins) {
-            markMissing(pin, available);
+            mark(pin, available, craftable);
         }
     }
 
-    private static void markMissing(PinnedRecipe pin, Set<Object> available) {
+    private static void addStock(
+            NetworkStock stock, IIngredientHelper<ItemStack> helper, Set<Object> available, Set<Object> craftable) {
+        stock.stored().forEach(stack -> available.add(helper.getUid(stack, UidContext.Recipe)));
+        stock.craftable().forEach(stack -> craftable.add(helper.getUid(stack, UidContext.Recipe)));
+    }
+
+    static Set<Item> wantedItems(List<PinnedRecipe> pins) {
+        Set<Item> items = new HashSet<>();
+        for (PinnedRecipe pin : pins) {
+            for (IRecipeSlotView input : pin.inputs()) {
+                input.getItemStacks().forEach(stack -> items.add(stack.getItem()));
+            }
+        }
+        return items;
+    }
+
+    private static void mark(PinnedRecipe pin, Set<Object> available, Set<Object> craftable) {
         List<Set<Object>> uids = pin.inputUids();
         for (int i = 0; i < uids.size(); i++) {
             Set<Object> wanted = uids.get(i);
-            pin.setMissing(i, !wanted.isEmpty() && Collections.disjoint(wanted, available));
+            if (wanted.isEmpty() || !Collections.disjoint(wanted, available)) {
+                pin.setStatus(i, InputStatus.PRESENT);
+            } else if (!Collections.disjoint(wanted, craftable)) {
+                pin.setStatus(i, InputStatus.CRAFTABLE);
+            } else {
+                pin.setStatus(i, InputStatus.MISSING);
+            }
         }
     }
 }

@@ -38,5 +38,5 @@
   "jeirecipepins.configuration.highlight.container_slots": "Container Slots",
   "jeirecipepins.configuration.highlight.container_slots.tooltip": "Tint the slots of an open container that hold an input of a pinned recipe.",
   "jeirecipepins.configuration.highlight.missing_inputs": "Missing Inputs",
-  "jeirecipepins.configuration.highlight.missing_inputs.tooltip": "Tint the inputs of a pinned recipe that are neither in your inventory nor in the open container."
+  "jeirecipepins.configuration.highlight.missing_inputs.tooltip": "Tint the inputs of a pinned recipe that are neither in your inventory nor in the open container. With an ME terminal open, or a linked wireless terminal on you on a server that also has this mod, inputs stored in the network count as found and inputs the network can only autocraft are tinted blue instead of red."
 }

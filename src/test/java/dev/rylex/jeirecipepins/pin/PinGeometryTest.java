@@ -32,6 +32,33 @@ class PinGeometryTest {
     }
 
     @Test
+    void aPinLeftOfTheGuiSpansTheWholeLeftSide() {
+        assertEquals(
+                List.of(new Rect(0, 30, 100, 40)),
+                PinGeometry.sideBands(List.of(new Rect(4, 30, 60, 40)), 100, 276, 400));
+    }
+
+    @Test
+    void aPinRightOfTheGuiSpansTheWholeRightSide() {
+        assertEquals(
+                List.of(new Rect(276, 30, 124, 40)),
+                PinGeometry.sideBands(List.of(new Rect(300, 30, 60, 40)), 100, 276, 400));
+    }
+
+    @Test
+    void aPinReachingIntoTheGuiKeepsItsOwnRightEdge() {
+        assertEquals(
+                List.of(new Rect(0, 30, 130, 40)),
+                PinGeometry.sideBands(List.of(new Rect(70, 30, 60, 40)), 100, 276, 400));
+    }
+
+    @Test
+    void aPinInsideTheGuiColumnIsLeftAsItIs() {
+        Rect pin = new Rect(150, 30, 60, 40);
+        assertEquals(List.of(pin), PinGeometry.sideBands(List.of(pin), 100, 276, 400));
+    }
+
+    @Test
     void clampKeepsThePanelInsideTheWindow() {
         assertEquals(0, PinGeometry.clamp(-5, 50, 200));
         assertEquals(150, PinGeometry.clamp(180, 50, 200));
@@ -41,24 +68,6 @@ class PinGeometryTest {
     @Test
     void clampFallsBackToTheOriginWhenThePanelIsWiderThanTheWindow() {
         assertEquals(0, PinGeometry.clamp(30, 300, 200));
-    }
-
-    @Test
-    void pinsLeftOfTheGuiBecomeOneBandDownToTheLowestPin() {
-        List<Rect> pins = List.of(new Rect(4, 24, 120, 60), new Rect(4, 88, 90, 40));
-        assertEquals(List.of(new Rect(0, 0, 200, 128)), PinGeometry.exclusionAreas(pins, 200, 400, 600));
-    }
-
-    @Test
-    void pinsRightOfTheGuiBandTheRightSide() {
-        List<Rect> pins = List.of(new Rect(420, 10, 120, 60));
-        assertEquals(List.of(new Rect(400, 0, 200, 70)), PinGeometry.exclusionAreas(pins, 200, 400, 600));
-    }
-
-    @Test
-    void aPinOverTheGuiKeepsItsOwnRectangle() {
-        List<Rect> pins = List.of(new Rect(150, 10, 120, 60));
-        assertEquals(pins, PinGeometry.exclusionAreas(pins, 200, 400, 600));
     }
 
     @Test

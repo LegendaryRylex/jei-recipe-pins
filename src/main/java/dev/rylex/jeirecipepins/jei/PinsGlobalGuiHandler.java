@@ -1,16 +1,18 @@
 package dev.rylex.jeirecipepins.jei;
 
 import dev.rylex.jeirecipepins.client.PinScreens;
+import dev.rylex.jeirecipepins.client.PinToggleButton;
+import dev.rylex.jeirecipepins.compat.ftblibrary.FtbLibraryCompat;
 import dev.rylex.jeirecipepins.pin.PinBoard;
 import dev.rylex.jeirecipepins.pin.PinGeometry;
 import dev.rylex.jeirecipepins.pin.PinnedRecipe;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import mezz.jei.api.gui.IRecipeLayoutDrawable;
 import mezz.jei.api.gui.builder.IClickableIngredientFactory;
 import mezz.jei.api.gui.handlers.IGlobalGuiHandler;
-import mezz.jei.api.gui.handlers.IGuiProperties;
 import mezz.jei.api.gui.inputs.RecipeSlotUnderMouse;
 import mezz.jei.api.ingredients.ITypedIngredient;
 import mezz.jei.api.runtime.IClickableIngredient;
@@ -25,22 +27,27 @@ final class PinsGlobalGuiHandler implements IGlobalGuiHandler {
     public Collection<Rect2i> getGuiExtraAreas() {
         PinBoard board = PinBoard.get();
         Screen screen = Minecraft.getInstance().screen;
-        if (!PinScreens.showsPins(board, screen) || board.pins().isEmpty()) {
-            return List.of();
+        List<Rect2i> extraAreas = new ArrayList<>();
+        PinToggleButton.exclusionArea(screen).ifPresent(extraAreas::add);
+        if (screen == null) {
+            return extraAreas;
         }
-        List<PinGeometry.Rect> pins = board.pins().stream()
-                .map(pin -> new PinGeometry.Rect(pin.x(), pin.y(), pin.width(), pin.height()))
-                .toList();
-        IGuiProperties properties = board.runtime()
+        List<PinGeometry.Rect> obstacles = new ArrayList<>();
+        if (PinScreens.showsPins(board, screen)) {
+            board.pins().stream()
+                    .map(pin -> new PinGeometry.Rect(pin.x(), pin.y(), pin.width(), pin.height()))
+                    .forEach(obstacles::add);
+        }
+        FtbLibraryCompat.sidebarArea(screen).ifPresent(obstacles::add);
+        List<PinGeometry.Rect> areas = board.runtime()
                 .flatMap(runtime -> runtime.getScreenHelper().getGuiProperties(screen))
-                .orElse(null);
-        List<PinGeometry.Rect> areas = properties == null
-                ? pins
-                : PinGeometry.exclusionAreas(
-                        pins, properties.guiLeft(), properties.guiRight(), properties.screenWidth());
-        return areas.stream()
-                .map(rect -> new Rect2i(rect.x(), rect.y(), rect.width(), rect.height()))
-                .toList();
+                .map(properties -> PinGeometry.sideBands(
+                        obstacles, properties.guiLeft(), properties.guiRight(), properties.screenWidth()))
+                .orElse(obstacles);
+        areas.stream()
+                .map(area -> new Rect2i(area.x(), area.y(), area.width(), area.height()))
+                .forEach(extraAreas::add);
+        return extraAreas;
     }
 
     @Override

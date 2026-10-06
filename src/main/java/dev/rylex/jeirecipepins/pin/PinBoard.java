@@ -3,6 +3,7 @@ package dev.rylex.jeirecipepins.pin;
 import com.google.gson.JsonElement;
 import com.mojang.serialization.JsonOps;
 import dev.rylex.jeirecipepins.config.PinsConfig;
+import dev.rylex.jeirecipepins.net.StockRequestPayload;
 import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.Collections;
@@ -14,13 +15,17 @@ import mezz.jei.api.recipe.types.IRecipeType;
 import mezz.jei.api.runtime.IJeiRuntime;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
+import net.minecraft.client.multiplayer.ClientPacketListener;
 import net.minecraft.resources.Identifier;
 import net.minecraft.resources.RegistryOps;
 import net.minecraft.world.inventory.AbstractContainerMenu;
+import net.neoforged.neoforge.client.network.ClientPacketDistributor;
 import org.jetbrains.annotations.Nullable;
 
 public final class PinBoard {
     private static final PinBoard INSTANCE = new PinBoard();
+    private static final int STOCK_REQUEST_INTERVAL = 20;
+    private static final int STOCK_LIFETIME = 3 * STOCK_REQUEST_INTERVAL;
 
     private final List<PinnedRecipe> pins = new ArrayList<>();
     private final BitSet containerSlots = new BitSet();
@@ -33,6 +38,9 @@ public final class PinBoard {
 
     private boolean loadPending;
     private boolean visible = true;
+    private NetworkStock carriedStock = NetworkStock.EMPTY;
+    private int carriedStockTicks;
+    private int stockRequestTimer;
 
     private PinBoard() {}
 
@@ -52,6 +60,13 @@ public final class PinBoard {
         store = null;
         pins.clear();
         loadPending = false;
+        carriedStock = NetworkStock.EMPTY;
+        carriedStockTicks = 0;
+    }
+
+    public void acceptNetworkStock(NetworkStock stock) {
+        carriedStock = stock;
+        carriedStockTicks = STOCK_LIFETIME;
     }
 
     public boolean isReady() {
@@ -91,7 +106,23 @@ public final class PinBoard {
         }
         AbstractContainerMenu menu =
                 minecraft.screen instanceof AbstractContainerScreen<?> screen ? screen.getMenu() : null;
-        IngredientMatcher.update(runtime.getIngredientManager(), minecraft.player, menu, pins, containerSlots);
+        requestNetworkStock(minecraft);
+        NetworkStock carried = carriedStockTicks > 0 ? carriedStock : NetworkStock.EMPTY;
+        carriedStockTicks = Math.max(0, carriedStockTicks - 1);
+        IngredientMatcher.update(runtime.getIngredientManager(), minecraft.player, menu, carried, pins, containerSlots);
+    }
+
+    private void requestNetworkStock(Minecraft minecraft) {
+        if (++stockRequestTimer < STOCK_REQUEST_INTERVAL || pins.isEmpty()) {
+            return;
+        }
+        stockRequestTimer = 0;
+        ClientPacketListener connection = minecraft.getConnection();
+        if (connection != null && connection.hasChannel(StockRequestPayload.TYPE)) {
+            ClientPacketDistributor.sendToServer(new StockRequestPayload(IngredientMatcher.wantedItems(pins).stream()
+                    .limit(StockRequestPayload.MAX_ITEMS)
+                    .toList()));
+        }
     }
 
     public boolean isPinned(IRecipeLayoutDrawable<?> layout) {

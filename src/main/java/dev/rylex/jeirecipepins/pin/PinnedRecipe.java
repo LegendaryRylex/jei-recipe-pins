@@ -3,6 +3,7 @@ package dev.rylex.jeirecipepins.pin;
 import com.google.gson.JsonElement;
 import com.mojang.serialization.Codec;
 import dev.rylex.jeirecipepins.JeiRecipePins;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -42,7 +43,7 @@ public final class PinnedRecipe {
     private final int innerHeight;
     private final List<IRecipeSlotView> inputs;
     private final List<Set<Object>> inputUids;
-    private final boolean[] missing;
+    private final InputStatus[] status;
     private int x;
     private int y;
     private int nudge;
@@ -69,7 +70,8 @@ public final class PinnedRecipe {
         this.innerHeight = withBorder.getHeight();
         this.inputs = inputs;
         this.inputUids = inputUids;
-        this.missing = new boolean[inputs.size()];
+        this.status = new InputStatus[inputs.size()];
+        Arrays.fill(status, InputStatus.PRESENT);
     }
 
     static <T> Optional<PinnedRecipe> create(
@@ -176,12 +178,12 @@ public final class PinnedRecipe {
         return inputUids;
     }
 
-    public boolean isMissing(int input) {
-        return missing[input];
+    public InputStatus status(int input) {
+        return status[input];
     }
 
-    void setMissing(int input, boolean value) {
-        missing[input] = value;
+    void setStatus(int input, InputStatus value) {
+        status[input] = value;
     }
 
     public int x() {
