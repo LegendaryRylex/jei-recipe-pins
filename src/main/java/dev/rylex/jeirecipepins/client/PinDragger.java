@@ -18,6 +18,7 @@ final class PinDragger {
     boolean press(PinBoard board, double mouseX, double mouseY, int button) {
         dragging = null;
         resizing = null;
+        board.setMoving(false);
         PinnedRecipe pin = board.pinAt(mouseX, mouseY).orElse(null);
         if (pin == null) {
             return false;
@@ -29,6 +30,7 @@ final class PinDragger {
         if (button == 0 && pin.onResizeGrip(mouseX, mouseY)) {
             board.bringToFront(pin);
             resizing = pin;
+            board.setMoving(true);
             offsetX = pin.x() + pin.width() - mouseX;
             offsetY = pin.y() + pin.height() - mouseY;
             return true;
@@ -36,6 +38,7 @@ final class PinDragger {
         if (button == 0 && pin.inTitleBar(mouseX, mouseY)) {
             board.bringToFront(pin);
             dragging = pin;
+            board.setMoving(true);
             offsetX = mouseX - pin.x();
             offsetY = mouseY - pin.y();
             return true;
@@ -65,6 +68,7 @@ final class PinDragger {
         }
         dragging = null;
         resizing = null;
+        board.setMoving(false);
         board.save();
         return true;
     }

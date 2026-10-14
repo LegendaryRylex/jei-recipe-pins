@@ -9,6 +9,10 @@ import org.jetbrains.annotations.Nullable;
 
 public final class PinGeometry {
     public static final int STACK_GAP = 4;
+
+    /** JEI's navigation strip, its paddings and one 18 pixel slot row, the least room a JEI list needs above a pin. */
+    public static final int LIST_MIN_HEIGHT = 48;
+
     public static final double MIN_SCALE = 0.5;
     public static final double MAX_SCALE = 2.0;
     private static final int SCALE_STEPS = 16;
@@ -114,26 +118,65 @@ public final class PinGeometry {
     }
 
     /**
-     * JEI shifts its overlay sideways past a rectangle it can fit beside, so a pin reaching into either side of the GUI
-     * is widened to that side's full width, leaving the overlay only room above or below it.
+     * JEI 19.64+ moves each overlay to wherever a band leaves it the most slots and drops its whole bookmark column
+     * for any area touching the GUI's left edge.
      */
-    public static List<Rect> sideBands(List<Rect> pins, int guiLeft, int guiRight, int screenWidth) {
+    public static List<Rect> sideBands(List<Rect> pins, int guiLeft, int guiRight, int screenWidth, int screenHeight) {
         List<Rect> bands = new ArrayList<>();
-        for (Rect pin : pins) {
+        for (int i = 0; i < pins.size(); i++) {
+            Rect pin = pins.get(i);
             boolean left = pin.x() < guiLeft;
             boolean right = pin.right() > guiRight;
             if (left) {
-                bands.add(new Rect(0, pin.y(), Math.max(pin.right(), guiLeft), pin.height()));
+                if (guiLeft > 1) {
+                    bands.add(stretch(0, guiLeft - 1, pin, ceiling(pins, i, true, guiLeft, guiRight), screenHeight));
+                }
+                int inside = Math.min(pin.right(), guiRight) - guiLeft;
+                if (inside > 0) {
+                    bands.add(new Rect(guiLeft, pin.y(), inside, pin.height()));
+                }
             }
             if (right) {
-                int x = Math.min(pin.x(), guiRight);
-                bands.add(new Rect(x, pin.y(), screenWidth - x, pin.height()));
+                int x = left ? guiRight : Math.min(pin.x(), guiRight);
+                bands.add(stretch(x, screenWidth - x, pin, ceiling(pins, i, false, guiLeft, guiRight), screenHeight));
             }
             if (!left && !right) {
                 bands.add(pin);
             }
         }
         return bands;
+    }
+
+    private static Rect stretch(int x, int width, Rect pin, int ceiling, int screenHeight) {
+        if (pin.y() - ceiling >= LIST_MIN_HEIGHT) {
+            return new Rect(x, pin.y(), width, screenHeight - pin.y());
+        }
+        return new Rect(x, 0, width, pin.bottom());
+    }
+
+    private static int ceiling(List<Rect> pins, int index, boolean leftSide, int guiLeft, int guiRight) {
+        Rect pin = pins.get(index);
+        int ceiling = 0;
+        for (int i = 0; i < pins.size(); i++) {
+            Rect other = pins.get(i);
+            boolean sameSide = leftSide ? other.x() < guiLeft : other.right() > guiRight;
+            if (i != index && sameSide && other.bottom() <= pin.y()) {
+                ceiling = Math.max(ceiling, other.bottom());
+            }
+        }
+        return ceiling;
+    }
+
+    public static int freeTop(int x, int top, int size, List<Rect> pins) {
+        Span[] occupied = pins.stream()
+                .filter(pin -> pin.x() < x + size && pin.right() > x)
+                .map(pin -> new Span(pin.y(), pin.height()))
+                .toArray(Span[]::new);
+        return firstFreeTop(top, size, occupied);
+    }
+
+    public static boolean overlapsAny(Rect area, List<Rect> pins) {
+        return firstOverlap(area, pins) != null;
     }
 
     private static Rect mirror(Rect rect, int screenHeight) {
