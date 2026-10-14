@@ -38,6 +38,7 @@ public final class PinBoard {
 
     private boolean loadPending;
     private boolean visible = true;
+    private boolean moving;
     private NetworkStock carriedStock = NetworkStock.EMPTY;
     private int carriedStockTicks;
     private int stockRequestTimer;
@@ -91,6 +92,14 @@ public final class PinBoard {
 
     public void toggleVisible() {
         visible = !visible;
+    }
+
+    public boolean isMoving() {
+        return moving;
+    }
+
+    public void setMoving(boolean moving) {
+        this.moving = moving;
     }
 
     public void tick(Minecraft minecraft) {

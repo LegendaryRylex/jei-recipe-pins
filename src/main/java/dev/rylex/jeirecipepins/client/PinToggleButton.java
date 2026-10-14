@@ -2,6 +2,8 @@ package dev.rylex.jeirecipepins.client;
 
 import dev.rylex.jeirecipepins.JeiRecipePins;
 import dev.rylex.jeirecipepins.pin.PinBoard;
+import dev.rylex.jeirecipepins.pin.PinGeometry;
+import java.util.List;
 import java.util.Optional;
 import mezz.jei.api.gui.handlers.IGuiProperties;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
@@ -75,8 +77,8 @@ public final class PinToggleButton {
 
     public static Optional<Rect2i> exclusionArea(@Nullable Screen screen) {
         return properties(screen)
-                .filter(properties -> !fitsBesideJeiButtons(properties))
-                .map(PinToggleButton::besideGui);
+                .filter(properties -> jeiRowSpot(properties, pinAreas()).isEmpty())
+                .map(properties -> besideGui(properties, pinAreas()));
     }
 
     private static Optional<IGuiProperties> properties(@Nullable Screen screen) {
@@ -95,23 +97,44 @@ public final class PinToggleButton {
     }
 
     private static Rect2i area(IGuiProperties properties) {
-        if (fitsBesideJeiButtons(properties)) {
-            return new Rect2i(
-                    JEI_ROW_X, properties.screenHeight() - JEI_MARGIN - BUTTON_SIZE, BUTTON_SIZE, BUTTON_SIZE);
+        List<PinGeometry.Rect> pins = pinAreas();
+        return jeiRowSpot(properties, pins).orElseGet(() -> besideGui(properties, pins));
+    }
+
+    private static List<PinGeometry.Rect> pinAreas() {
+        return PinBoard.get().pins().stream()
+                .map(pin -> new PinGeometry.Rect(pin.x(), pin.y(), pin.width(), pin.height()))
+                .toList();
+    }
+
+    private static Optional<Rect2i> jeiRowSpot(IGuiProperties properties, List<PinGeometry.Rect> pins) {
+        if (JEI_ROW_X + BUTTON_SIZE > properties.guiLeft() - JEI_MARGIN
+                || properties.screenHeight() < 2 * JEI_MARGIN + BUTTON_SIZE) {
+            return Optional.empty();
         }
-        return besideGui(properties);
+        PinGeometry.Rect spot = new PinGeometry.Rect(
+                JEI_ROW_X, properties.screenHeight() - JEI_MARGIN - BUTTON_SIZE, BUTTON_SIZE, BUTTON_SIZE);
+        return PinGeometry.overlapsAny(spot, pins) ? Optional.empty() : Optional.of(toRect2i(spot));
     }
 
-    private static boolean fitsBesideJeiButtons(IGuiProperties properties) {
-        return JEI_ROW_X + BUTTON_SIZE <= properties.guiLeft() - JEI_MARGIN
-                && properties.screenHeight() >= 2 * JEI_MARGIN + BUTTON_SIZE;
-    }
-
-    private static Rect2i besideGui(IGuiProperties properties) {
+    private static Rect2i besideGui(IGuiProperties properties, List<PinGeometry.Rect> pins) {
+        int top = Math.max(0, Math.min(properties.guiTop(), properties.screenHeight() - BUTTON_SIZE));
         int left = properties.guiLeft() - BUTTON_GAP - BUTTON_SIZE;
         int right = properties.guiRight() + BUTTON_GAP;
+        for (int x : new int[] {left, right}) {
+            if (x < 0 || x + BUTTON_SIZE > properties.screenWidth()) {
+                continue;
+            }
+            int y = PinGeometry.freeTop(x, top, BUTTON_SIZE, pins);
+            if (y + BUTTON_SIZE <= properties.screenHeight()) {
+                return new Rect2i(x, y, BUTTON_SIZE, BUTTON_SIZE);
+            }
+        }
         int x = left >= 0 ? left : Math.min(right, properties.screenWidth() - BUTTON_SIZE);
-        int y = Math.max(0, Math.min(properties.guiTop(), properties.screenHeight() - BUTTON_SIZE));
-        return new Rect2i(Math.max(0, x), y, BUTTON_SIZE, BUTTON_SIZE);
+        return new Rect2i(Math.max(0, x), top, BUTTON_SIZE, BUTTON_SIZE);
+    }
+
+    private static Rect2i toRect2i(PinGeometry.Rect rect) {
+        return new Rect2i(rect.x(), rect.y(), rect.width(), rect.height());
     }
 }

@@ -1,6 +1,7 @@
 package dev.rylex.jeirecipepins.pin;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 
 import dev.rylex.jeirecipepins.pin.PinGeometry.Rect;
 import dev.rylex.jeirecipepins.pin.PinGeometry.Span;
@@ -34,28 +35,90 @@ class PinGeometryTest {
     @Test
     void aPinLeftOfTheGuiSpansTheWholeLeftSide() {
         assertEquals(
-                List.of(new Rect(0, 30, 100, 40)),
-                PinGeometry.sideBands(List.of(new Rect(4, 30, 60, 40)), 100, 276, 400));
+                List.of(new Rect(0, 0, 99, 70)),
+                PinGeometry.sideBands(List.of(new Rect(4, 30, 60, 40)), 100, 276, 400, 300));
     }
 
     @Test
     void aPinRightOfTheGuiSpansTheWholeRightSide() {
         assertEquals(
-                List.of(new Rect(276, 30, 124, 40)),
-                PinGeometry.sideBands(List.of(new Rect(300, 30, 60, 40)), 100, 276, 400));
+                List.of(new Rect(276, 0, 124, 70)),
+                PinGeometry.sideBands(List.of(new Rect(300, 30, 60, 40)), 100, 276, 400, 300));
     }
 
     @Test
     void aPinReachingIntoTheGuiKeepsItsOwnRightEdge() {
         assertEquals(
-                List.of(new Rect(0, 30, 130, 40)),
-                PinGeometry.sideBands(List.of(new Rect(70, 30, 60, 40)), 100, 276, 400));
+                List.of(new Rect(0, 0, 99, 70), new Rect(100, 30, 30, 40)),
+                PinGeometry.sideBands(List.of(new Rect(70, 30, 60, 40)), 100, 276, 400, 300));
+    }
+
+    @Test
+    void noLeftBandReachesTheGuiLeftEdge() {
+        List<Rect> pins = List.of(new Rect(4, 30, 60, 40), new Rect(70, 80, 60, 40), new Rect(10, 130, 380, 20));
+        for (Rect band : PinGeometry.sideBands(pins, 100, 276, 400, 300)) {
+            boolean attachedToGuiLeft = band.x() < 100 && band.right() >= 100;
+            assertFalse(attachedToGuiLeft, band.toString());
+        }
+    }
+
+    @Test
+    void aPinSpanningTheGuiCoversItBetweenItsTwoBands() {
+        assertEquals(
+                List.of(new Rect(0, 0, 99, 70), new Rect(100, 30, 176, 40), new Rect(276, 0, 124, 70)),
+                PinGeometry.sideBands(List.of(new Rect(10, 30, 380, 40)), 100, 276, 400, 300));
+    }
+
+    @Test
+    void aGuiFlushWithTheScreenEdgeGetsNoLeftBand() {
+        assertEquals(
+                List.of(new Rect(1, 30, 40, 40)),
+                PinGeometry.sideBands(List.of(new Rect(0, 30, 41, 40)), 1, 276, 400, 300));
+    }
+
+    @Test
+    void aPinInTheLowerHalfStretchesToTheBottomEdge() {
+        assertEquals(
+                List.of(new Rect(0, 200, 99, 100), new Rect(276, 200, 124, 100)),
+                PinGeometry.sideBands(
+                        List.of(new Rect(4, 200, 60, 40), new Rect(300, 200, 60, 40)), 100, 276, 400, 300));
+    }
+
+    @Test
+    void aCentredPinStretchesToTheBottomEdge() {
+        assertEquals(
+                List.of(new Rect(0, 130, 99, 170)),
+                PinGeometry.sideBands(List.of(new Rect(4, 130, 60, 40)), 100, 276, 400, 300));
+    }
+
+    @Test
+    void aPinWithRoomForAListAboveItStretchesToTheBottomEdge() {
+        assertEquals(
+                List.of(new Rect(0, 100, 99, 200)),
+                PinGeometry.sideBands(List.of(new Rect(4, 100, 60, 40)), 100, 276, 400, 300));
+    }
+
+    @Test
+    void aPinTooCloseUnderTheSidebarStretchesToTheTopEdge() {
+        assertEquals(
+                List.of(new Rect(0, 0, 99, 51), new Rect(0, 0, 99, 120)),
+                PinGeometry.sideBands(List.of(new Rect(0, 0, 68, 51), new Rect(4, 80, 60, 40)), 100, 276, 400, 300));
+    }
+
+    @Test
+    void freeTopStepsBelowAPinInTheColumn() {
+        assertEquals(110 + PinGeometry.STACK_GAP, PinGeometry.freeTop(51, 60, 20, List.of(new Rect(40, 50, 100, 60))));
+    }
+
+    @Test
+    void freeTopIgnoresPinsOutsideTheColumn() {
+        assertEquals(60, PinGeometry.freeTop(51, 60, 20, List.of(new Rect(200, 50, 60, 60))));
     }
 
     @Test
     void aPinInsideTheGuiColumnIsLeftAsItIs() {
         Rect pin = new Rect(150, 30, 60, 40);
-        assertEquals(List.of(pin), PinGeometry.sideBands(List.of(pin), 100, 276, 400));
+        assertEquals(List.of(pin), PinGeometry.sideBands(List.of(pin), 100, 276, 400, 300));
     }
 
     @Test

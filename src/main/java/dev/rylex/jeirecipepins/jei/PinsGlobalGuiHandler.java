@@ -22,9 +22,22 @@ import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.renderer.Rect2i;
 
 final class PinsGlobalGuiHandler implements IGlobalGuiHandler {
+    private List<Rect2i> lastAreas = List.of();
 
+    /**
+     * JEI re-lays out its overlays on every change to these areas, so they hold still while a pin is dragged or resized
+     * and update once the mouse is released.
+     */
     @Override
     public Collection<Rect2i> getGuiExtraAreas() {
+        if (PinBoard.get().isMoving() && Minecraft.getInstance().mouseHandler.isLeftPressed()) {
+            return lastAreas;
+        }
+        lastAreas = currentAreas();
+        return lastAreas;
+    }
+
+    private static List<Rect2i> currentAreas() {
         PinBoard board = PinBoard.get();
         Screen screen = Minecraft.getInstance().screen;
         List<Rect2i> extraAreas = new ArrayList<>();
@@ -42,7 +55,11 @@ final class PinsGlobalGuiHandler implements IGlobalGuiHandler {
         List<PinGeometry.Rect> areas = board.runtime()
                 .flatMap(runtime -> runtime.getScreenHelper().getGuiProperties(screen))
                 .map(properties -> PinGeometry.sideBands(
-                        obstacles, properties.guiLeft(), properties.guiRight(), properties.screenWidth()))
+                        obstacles,
+                        properties.guiLeft(),
+                        properties.guiRight(),
+                        properties.screenWidth(),
+                        properties.screenHeight()))
                 .orElse(obstacles);
         areas.stream()
                 .map(area -> new Rect2i(area.x(), area.y(), area.width(), area.height()))
