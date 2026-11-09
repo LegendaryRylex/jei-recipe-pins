@@ -38,3 +38,10 @@ type="optional"
 versionRange="${ae2_version_range}"
 ordering="NONE"
 side="BOTH"
+
+[[dependencies.${mod_id}]]
+modId="integratedterminals"
+type="optional"
+versionRange="${integrated_terminals_version_range}"
+ordering="NONE"
+side="BOTH"

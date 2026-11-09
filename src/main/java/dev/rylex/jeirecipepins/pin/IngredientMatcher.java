@@ -1,6 +1,7 @@
 package dev.rylex.jeirecipepins.pin;
 
 import dev.rylex.jeirecipepins.compat.ae2.Ae2Compat;
+import dev.rylex.jeirecipepins.compat.integratedterminals.IntegratedTerminalsCompat;
 import java.util.BitSet;
 import java.util.Collections;
 import java.util.HashSet;
@@ -37,6 +38,8 @@ final class IngredientMatcher {
             @Nullable AbstractContainerMenu menu,
             NetworkStock carried,
             List<PinnedRecipe> pins,
+            Set<Object> wanted,
+            Set<Item> wantedItems,
             BitSet containerSlots) {
         containerSlots.clear();
         if (player == null || pins.isEmpty()) {
@@ -46,10 +49,6 @@ final class IngredientMatcher {
             return;
         }
         IIngredientHelper<ItemStack> helper = ingredients.getIngredientHelper(VanillaTypes.ITEM_STACK);
-        Set<Object> wanted = new HashSet<>();
-        for (PinnedRecipe pin : pins) {
-            pin.inputUids().forEach(wanted::addAll);
-        }
         Set<Object> available = new HashSet<>();
         Set<Object> craftable = new HashSet<>();
         Inventory inventory = player.getInventory();
@@ -74,7 +73,9 @@ final class IngredientMatcher {
                     containerSlots.set(i);
                 }
             }
-            Ae2Compat.networkStock(menu, () -> wantedItems(pins))
+            Ae2Compat.networkStock(menu, () -> wantedItems)
+                    .ifPresent(stock -> addStock(stock, helper, available, craftable));
+            IntegratedTerminalsCompat.networkStock(menu, () -> wantedItems)
                     .ifPresent(stock -> addStock(stock, helper, available, craftable));
         }
         addStock(carried, helper, available, craftable);
@@ -89,14 +90,15 @@ final class IngredientMatcher {
         stock.craftable().forEach(stack -> craftable.add(helper.getUid(stack, UidContext.Recipe)));
     }
 
-    static Set<Item> wantedItems(List<PinnedRecipe> pins) {
-        Set<Item> items = new HashSet<>();
+    static void collectWanted(List<PinnedRecipe> pins, Set<Object> wanted, Set<Item> wantedItems) {
+        wanted.clear();
+        wantedItems.clear();
         for (PinnedRecipe pin : pins) {
+            pin.inputUids().forEach(wanted::addAll);
             for (IRecipeSlotView input : pin.inputs()) {
-                input.getItemStacks().forEach(stack -> items.add(stack.getItem()));
+                input.getItemStacks().forEach(stack -> wantedItems.add(stack.getItem()));
             }
         }
-        return items;
     }
 
     private static void mark(PinnedRecipe pin, Set<Object> available, Set<Object> craftable) {

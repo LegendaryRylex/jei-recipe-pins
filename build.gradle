@@ -101,6 +101,10 @@ dependencies {
     compileOnly "dev.ftb.mods:ftb-library-neoforge:${ftb_library_version}"
     compileOnly "dev.architectury:architectury-neoforge:${architectury_version}"
     compileOnly "org.appliedenergistics:appliedenergistics2:${ae2_version}"
+    compileOnly "curse.maven:integrated-terminals-295910:${integrated_terminals_file}"
+    compileOnly "curse.maven:integrated-dynamics-236307:${integrated_dynamics_file}"
+    compileOnly "curse.maven:cyclops-core-232758:${cyclops_core_file}"
+    compileOnly "curse.maven:common-capabilities-247007:${common_capabilities_file}"
 
     testImplementation platform('org.junit:junit-bom:5.14.4')
     testImplementation 'org.junit.jupiter:junit-jupiter'
@@ -137,7 +141,8 @@ var generateModMetadata = tasks.register("generateModMetadata", ProcessResources
             mod_authors            : mod_authors,
             mod_description        : mod_description,
             jei_version_range      : jei_version_range,
-            ae2_version_range      : ae2_version_range
+            ae2_version_range      : ae2_version_range,
+            integrated_terminals_version_range: integrated_terminals_version_range
     ]
     inputs.properties replaceProperties
     expand replaceProperties
