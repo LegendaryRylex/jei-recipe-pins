@@ -1,6 +1,7 @@
 package dev.rylex.jeirecipepins.client;
 
 import dev.rylex.jeirecipepins.compat.ftblibrary.FtbLibraryCompat;
+import dev.rylex.jeirecipepins.compat.integratedterminals.IntegratedTerminalsCompat;
 import dev.rylex.jeirecipepins.config.PinsConfig;
 import dev.rylex.jeirecipepins.pin.PinBoard;
 import dev.rylex.jeirecipepins.pin.PinnedRecipe;
@@ -49,6 +50,11 @@ final class PinOverlay {
             guiGraphics.nextStratum();
             if (PinsConfig.highlightContainerSlots() && screen instanceof AbstractContainerScreen<?> container) {
                 drawContainerHighlights(guiGraphics, container, board.containerSlots());
+                IntegratedTerminalsCompat.forEachGridStack(screen, (x, y, stack) -> {
+                    if (board.wants(stack)) {
+                        guiGraphics.fill(x, y, x + 16, y + 16, CONTAINER_HIGHLIGHT);
+                    }
+                });
             }
             drawPins(guiGraphics, screen, board, mouseX, mouseY);
         }

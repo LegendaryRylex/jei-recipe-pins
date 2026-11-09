@@ -7,9 +7,13 @@ import dev.rylex.jeirecipepins.net.StockRequestPayload;
 import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
+import mezz.jei.api.constants.VanillaTypes;
 import mezz.jei.api.gui.IRecipeLayoutDrawable;
+import mezz.jei.api.ingredients.subtypes.UidContext;
 import mezz.jei.api.recipe.category.IRecipeCategory;
 import mezz.jei.api.recipe.types.IRecipeType;
 import mezz.jei.api.runtime.IJeiRuntime;
@@ -19,6 +23,8 @@ import net.minecraft.client.multiplayer.ClientPacketListener;
 import net.minecraft.resources.Identifier;
 import net.minecraft.resources.RegistryOps;
 import net.minecraft.world.inventory.AbstractContainerMenu;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
 import net.neoforged.neoforge.client.network.ClientPacketDistributor;
 import org.jetbrains.annotations.Nullable;
 
@@ -29,6 +35,8 @@ public final class PinBoard {
 
     private final List<PinnedRecipe> pins = new ArrayList<>();
     private final BitSet containerSlots = new BitSet();
+    private final Set<Object> wantedUids = new HashSet<>();
+    private final Set<Item> wantedItems = new HashSet<>();
 
     @Nullable
     private IJeiRuntime runtime;
@@ -86,6 +94,14 @@ public final class PinBoard {
         return containerSlots;
     }
 
+    public boolean wants(ItemStack stack) {
+        return runtime != null
+                && wantedItems.contains(stack.getItem())
+                && wantedUids.contains(runtime.getIngredientManager()
+                        .getIngredientHelper(VanillaTypes.ITEM_STACK)
+                        .getUid(stack, UidContext.Recipe));
+    }
+
     public boolean isVisible() {
         return visible;
     }
@@ -118,7 +134,16 @@ public final class PinBoard {
         requestNetworkStock(minecraft);
         NetworkStock carried = carriedStockTicks > 0 ? carriedStock : NetworkStock.EMPTY;
         carriedStockTicks = Math.max(0, carriedStockTicks - 1);
-        IngredientMatcher.update(runtime.getIngredientManager(), minecraft.player, menu, carried, pins, containerSlots);
+        IngredientMatcher.collectWanted(pins, wantedUids, wantedItems);
+        IngredientMatcher.update(
+                runtime.getIngredientManager(),
+                minecraft.player,
+                menu,
+                carried,
+                pins,
+                wantedUids,
+                wantedItems,
+                containerSlots);
     }
 
     private void requestNetworkStock(Minecraft minecraft) {
@@ -128,9 +153,8 @@ public final class PinBoard {
         stockRequestTimer = 0;
         ClientPacketListener connection = minecraft.getConnection();
         if (connection != null && connection.hasChannel(StockRequestPayload.TYPE)) {
-            ClientPacketDistributor.sendToServer(new StockRequestPayload(IngredientMatcher.wantedItems(pins).stream()
-                    .limit(StockRequestPayload.MAX_ITEMS)
-                    .toList()));
+            ClientPacketDistributor.sendToServer(new StockRequestPayload(
+                    wantedItems.stream().limit(StockRequestPayload.MAX_ITEMS).toList()));
         }
     }
 

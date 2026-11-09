@@ -22,11 +22,15 @@ class CompatIsolationTest {
             new ForeignRule(
                     Paths.get("dev", "rylex", "jeirecipepins", "compat", "ftblibrary"),
                     List.of("dev.ftb.mods", "dev.architectury")),
-            new ForeignRule(Paths.get("dev", "rylex", "jeirecipepins", "compat", "ae2"), List.of("appeng.")));
+            new ForeignRule(Paths.get("dev", "rylex", "jeirecipepins", "compat", "ae2"), List.of("appeng.")),
+            new ForeignRule(
+                    Paths.get("dev", "rylex", "jeirecipepins", "compat", "integratedterminals"),
+                    List.of("org.cyclops.")));
 
     private static final List<String> COMPAT_ENTRY_POINTS = List.of(
             "dev.rylex.jeirecipepins.compat.ftblibrary.FtbLibraryCompat",
-            "dev.rylex.jeirecipepins.compat.ae2.Ae2Compat");
+            "dev.rylex.jeirecipepins.compat.ae2.Ae2Compat",
+            "dev.rylex.jeirecipepins.compat.integratedterminals.IntegratedTerminalsCompat");
 
     @Test
     void foreignClassesStayInsideTheirCompatPackage() {
